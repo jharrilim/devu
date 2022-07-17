@@ -1,0 +1,35 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`prefixer prefixes 1`] = `
+"
+type test_User {
+  name: String!
+  createdAt: String
+  age: Int
+  friends: [test_User]
+}
+
+type test_Query {
+  hello: String
+  person: test_User
+}
+
+type test_Mutation {
+  createUser(name: String!): test_User
+}
+
+
+type Query {
+  \\"\\"\\"
+  This is the root query for [test](http://localhost:3000/user/1).
+  \\"\\"\\"
+  test_query: test_Query
+}
+
+type Mutation {
+  \\"\\"\\"
+  This is the root mutation for [test](http://localhost:3000/user/1).
+  \\"\\"\\"
+  test_mutation: test_Mutation
+}"
+`;
