@@ -68,6 +68,7 @@ const handler: NextApiHandler = async (req, res) => {
   const server = new ApolloServer({
     typeDefs,
     resolvers: mockResolvers(typeDefs),
+    introspection: true,
   });
 
   await server.start();
