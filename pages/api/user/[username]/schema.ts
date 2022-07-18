@@ -1,14 +1,14 @@
 import { NextApiHandler } from 'next';
 import { prisma } from '../../../../db';
 import { unstable_getServerSession } from 'next-auth/next';
-import authOptions from '../../auth/[...nextauth]';
+import { nextAuthOptions } from '../../auth/[...nextauth]';
 
 const handler: NextApiHandler = async (req, res) => {
   if (!req.query.username) {
     return res.status(400);
   }
 
-  const session = await unstable_getServerSession(req, res, authOptions);
+  const session = await unstable_getServerSession(req, res, nextAuthOptions);
 
   if (!session) {
     return res.status(401);

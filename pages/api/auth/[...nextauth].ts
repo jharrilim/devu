@@ -6,7 +6,7 @@ const findOrCreateUser = async (credentials: {
   username: string;
   email: string;
 }) => {
-  const url = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/user`;
+  const url = `${process.env.NEXTAUTH_URL || 'http://localhost:3000/'}api/user`;
   const res = await fetch(url, {
     method: 'POST',
     body: JSON.stringify(credentials),
