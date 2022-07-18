@@ -4,9 +4,16 @@ import { prisma } from '../../db';
 import { useState } from 'react';
 import Error from 'next/error';
 import styles from './[username].module.css';
+import Header from '../../components/header';
+import Link from 'next/link';
+import { unstable_getServerSession } from 'next-auth';
+import { nextAuthOptions } from '../api/auth/[...nextauth]';
+import { useSession } from 'next-auth/react';
 
 interface ServerProps {
   errorCode?: number;
+  following?: boolean;
+  sameUser?: boolean;
   user?: {
     id: number;
     name: string;
@@ -18,8 +25,15 @@ interface ServerProps {
 }
 
 export const getServerSideProps: GetServerSideProps<ServerProps> = async (ctx) => {
+  const session = await unstable_getServerSession(
+    ctx.req,
+    ctx.res,
+    nextAuthOptions
+  );
+
   const username = ctx.params?.username;
   if (username === undefined) {
+    // should be impossible
     return {
       props: {
         errorCode: 404,
@@ -27,7 +41,7 @@ export const getServerSideProps: GetServerSideProps<ServerProps> = async (ctx) =
     };
   }
 
-  const user = await prisma.user.findFirst({
+  const pageUser = await prisma.user.findFirst({
     where: {
       name: {
         equals: `${username}`,
@@ -39,7 +53,8 @@ export const getServerSideProps: GetServerSideProps<ServerProps> = async (ctx) =
     }
   });
 
-  if (!user) {
+  if (!pageUser) {
+    // user doesn't exist
     return {
       props: {
         errorCode: 404,
@@ -47,17 +62,42 @@ export const getServerSideProps: GetServerSideProps<ServerProps> = async (ctx) =
     };
   }
 
-  const apiSchema = user.apiSchema
-    ? user.apiSchema
+  const sameUser = session?.user?.name === pageUser.name;
+
+  let following = false;
+  if (!sameUser && session?.user?.name) {
+    const currentUser = await prisma.user.findFirst({
+      where: {
+        name: {
+          equals: session.user.name,
+          mode: 'insensitive',
+        }
+      },
+      include: {
+        following: {
+          where: {
+            followingId: pageUser.id,
+          },
+        },
+      },
+    });
+    following = (currentUser?.following?.length || 0) > 0;
+  }
+
+  const apiSchema = pageUser.apiSchema
+    ? pageUser.apiSchema
     : await prisma.apiSchema.create({
-      data: { userId: user.id, source: '' },
+      data: { userId: pageUser.id, source: '' },
     });
 
+  // A logged in user viewing a user's page
   return {
     props: {
+      following,
+      sameUser,
       user: {
-        id: user.id,
-        name: user.name,
+        id: pageUser.id,
+        name: pageUser.name,
       },
       apiSchema: {
         id: apiSchema.id,
@@ -69,14 +109,20 @@ export const getServerSideProps: GetServerSideProps<ServerProps> = async (ctx) =
 
 
 interface UserPageProps {
-  user: NonNullable<ServerProps['user']>;
   apiSchema: NonNullable<ServerProps['apiSchema']>;
+  following: ServerProps['following'];
+  sameUser: ServerProps['sameUser'];
+  user: NonNullable<ServerProps['user']>;
 }
 
 const UserPage: NextPage<UserPageProps> = ({
-  user,
   apiSchema,
+  following,
+  sameUser,
+  user,
 }) => {
+  const { data: session } = useSession();
+  const [followingState, setFollowing] = useState(following ?? false);
   const [saveDisabled, setSaveDisabled] = useState(true);
   const [code, setCode] = useState(apiSchema?.source ?? '');
   const [savedText, setSavedText] = useState('');
@@ -108,37 +154,69 @@ const UserPage: NextPage<UserPageProps> = ({
     setSavedText('');
   };
 
+  const onFollowChange = () => {
+    const action = followingState ? 'unfollow' : 'follow';
+    fetch(`/api/user/${user.name}/${action}`).then(() => {
+      console.log(`${session?.user?.name} ${action}ed ${user.name}`);
+      setFollowing(followingState => !followingState);
+    });
+  };
+
   return (
-    <main className={styles.root}>
-      <div className={styles.container}>
-        <h2>{user?.name}</h2>
-        <div className={styles.editorHeader}>
-          <div className={styles.editorHeaderLeft}>
-            <button onClick={save} disabled={saveDisabled}>Save</button>
-            <span className={styles.savedText}>{savedText}</span>
+    <div>
+      <Header />
+      <main className={styles.root}>
+        <div className={styles.container}>
+          <h2>
+            {user?.name}
+            {sameUser ? (
+              <span className={styles.sameUser}> (You)</span>
+            ) : (
+              <>
+                {session && (
+                  <button onClick={onFollowChange}>{followingState ? 'unfollow' : 'follow'}</button>
+                )}
+              </>
+            )}
+          </h2>
+          <div className={styles.editorHeader}>
+            <div className={styles.editorHeaderLeft}>
+              <button onClick={save} disabled={saveDisabled}>Save</button>
+              <span className={styles.savedText}>{savedText}</span>
+            </div>
+            <div className={styles.editorHeaderRight}>
+              <Link href={`/user/${user.name}/graphql`}>GraphiQL</Link>
+            </div>
           </div>
-          <div className={styles.editorHeaderRight}>
-            <a href={`/user/${user.name}/graphql`}>GraphiQL</a>
-          </div>
+          <Editor
+            height="500px"
+            language="graphql"
+            theme="vs-dark"
+            onChange={onEditorChange}
+            options={{
+              // meh, seems like a hindrance to add this
+              // readOnly: !sameUser,
+            }}
+            value={code}
+          />
+          <blockquote>
+            Note: Currently only supports queries, no mutations or subscriptions.
+          </blockquote>
         </div>
-        <Editor
-          height="500px"
-          language="graphql"
-          theme="vs-dark"
-          onChange={onEditorChange}
-          value={code}
-        />
-        <blockquote>
-          Note: Currently only supports queries, no mutations or subscriptions.
-        </blockquote>
-      </div>
-    </main>
+      </main>
+    </div>
   );
 };
 
-export default function Page({ apiSchema, user, errorCode }: ServerProps) {
+export default function Page({
+  apiSchema,
+  following,
+  errorCode,
+  sameUser,
+  user,
+}: ServerProps) {
   if (errorCode) {
     return <Error statusCode={errorCode} title="User does not exist" />;
   }
-  return <UserPage user={user!} apiSchema={apiSchema!} />;
+  return <UserPage following={following} user={user!} apiSchema={apiSchema!} sameUser={sameUser} />;
 };

@@ -29,6 +29,15 @@ const handler: NextApiHandler = async (req, res) => {
     },
     include: {
       apiSchema: true,
+      following: {
+        include: {
+          following: {
+            include: {
+              apiSchema: true,
+            }
+          },
+        }
+      },
     }
   });
 
@@ -42,8 +51,17 @@ const handler: NextApiHandler = async (req, res) => {
 
   const prefixedSource = prefixer(apiSchema.source, name);
 
-  const typeDefs = gql`${prefixedSource}`;
+  const followerSources = user.following
+    .map(following => {
+      return {
+        name: following.following.name,
+        source: following.following.apiSchema?.source ?? '',
+      };
+    })
+    .filter(following => following.source)
+    .map(following => prefixer(following.source, following.name));
 
+    const typeDefs = gql`${[prefixedSource, ...followerSources].join('\n')}`;
   const server = new ApolloServer({
     typeDefs,
     resolvers: mockResolvers(typeDefs),

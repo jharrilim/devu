@@ -8,8 +8,14 @@ const handler: NextApiHandler = async (req, res) => {
     if (username && email) {
       const user = await prisma.user.findFirst({
         where: {
-          name: username,
-          email,
+          name: {
+            equals: username,
+            mode: 'insensitive',
+          },
+          email: {
+            equals: email,
+            mode: 'insensitive',
+          },
         }
       });
       if (user) {

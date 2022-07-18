@@ -10,7 +10,7 @@ const handler: NextApiHandler = async (req, res) => {
 
   const session = await unstable_getServerSession(req, res, nextAuthOptions);
 
-  if (!session) {
+  if (!session || !session.user) {
     return res.status(401);
   }
 
@@ -24,7 +24,7 @@ const handler: NextApiHandler = async (req, res) => {
       },
     });
 
-    if (!user) {
+    if (!user || user.name !== session.user.name) {
       return res.status(404);
     }
 

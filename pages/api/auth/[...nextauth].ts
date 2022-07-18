@@ -18,14 +18,29 @@ const findOrCreateUser = async (credentials: {
 export const nextAuthOptions: NextAuthOptions = {
   callbacks: {
     async signIn(params) {
-      const email = params.profile.email || params.user.email || params.credentials?.email.value;
-      const name = params.profile.name || params.user.name || email;
+      const email = params?.profile?.email || params?.user?.email || params.credentials?.email.value;
+      const name = params?.profile?.name || params?.user?.name || params.credentials?.username.value || email;
+      console.log('signing in ', email, name);
       const user = await findOrCreateUser({
         username: name!,
         email: email!,
       });
-      return !!user;
+      return user;
     },
+    async redirect({ url, baseUrl }) {
+      // Allows relative callback URLs
+      if (url.startsWith('/')) {
+        console.log('redirecting to ', baseUrl + url);
+        return `${baseUrl}${url}`;
+      }
+      // Allows callback URLs on the same origin
+      if (new URL(url).origin === baseUrl) {
+        console.log('redirecting to ', url);
+        return url;
+      }
+      console.log('redirecting to ', baseUrl);
+      return baseUrl;
+    }
   },
   // Configure one or more authentication providers
   providers: [
@@ -48,7 +63,6 @@ if (process.env.NODE_ENV === 'development') {
     credentials: {
       username: { label: 'Username', type: 'text', placeholder: 'ashketchum' },
       email: { label: 'Email', type: 'email', placeholder: 'ash.ketchum@example.com' },
-      password: { label: 'Password', type: 'password' }
     },
     async authorize(credentials, req) {
       // You need to provide your own logic here that takes the credentials
