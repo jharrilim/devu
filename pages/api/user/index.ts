@@ -4,8 +4,8 @@ import { prisma } from '../../../db';
 
 const handler: NextApiHandler = async (req, res) => {
   if (req.method === 'POST') {
-    const { username, email, password } = req.body;
-    if (username && email && password) {
+    const { username, email } = req.body;
+    if (username && email) {
       const user = await prisma.user.findFirst({
         where: {
           name: username,
@@ -22,6 +22,8 @@ const handler: NextApiHandler = async (req, res) => {
           },
         }));
       }
+    } else {
+      return res.status(400).end('Missing username or email');
     }
   } else {
     return res.status(405).end('Method not allowed');
