@@ -157,6 +157,12 @@ const valueForType = (userTypes: Record<string, any>) => (fieldName: string, typ
       if(/price|cost/i.test(fieldName)) {
         return () => faker.commerce.price(1, 1000, 2, '$');
       }
+      if(/biography|summary|abstract|description|info/i.test(fieldName)) {
+        return () => faker.lorem.paragraph();
+      }
+      if(/title|phrase|sentence|text/i.test(fieldName)) {
+        return () => faker.lorem.sentence();
+      }
       if (/phone/i.test(fieldName)) {
         return () => faker.phone.number();
       }
