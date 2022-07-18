@@ -163,6 +163,9 @@ const valueForType = (userTypes: Record<string, any>) => (fieldName: string, typ
       return () => faker.random.word();
     }
     case 'Int': {
+      if (fieldName.toLowerCase() === 'id') {
+        return () => faker.datatype.number();
+      }
       if (fieldName.includes('age')) {
         return () => faker.datatype.number({ min: 1, max: 110 });
       }
