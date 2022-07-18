@@ -12,8 +12,8 @@ interface ServerProps {
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
   return {
     props: {
-      apiUrl: `/api/user/${ctx.params!.id}/api`,
-      backUrl: `/user/${ctx.params!.id}`,
+      apiUrl: `/api/user/${ctx.params!.username}/api`,
+      backUrl: `/user/${ctx.params!.username}`,
     },
   };
 };

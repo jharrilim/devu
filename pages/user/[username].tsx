@@ -2,9 +2,8 @@ import { GetServerSideProps, NextPage } from 'next';
 import Editor from '@monaco-editor/react';
 import { prisma } from '../../db';
 import { useState } from 'react';
-import useSWR from 'swr';
 import Error from 'next/error';
-import styles from './[id].module.css';
+import styles from './[username].module.css';
 
 interface ServerProps {
   errorCode?: number;
@@ -19,8 +18,8 @@ interface ServerProps {
 }
 
 export const getServerSideProps: GetServerSideProps<ServerProps> = async (ctx) => {
-  const id = ctx.params?.id;
-  if (id === undefined) {
+  const username = ctx.params?.username;
+  if (username === undefined) {
     return {
       props: {
         errorCode: 404,
@@ -30,7 +29,7 @@ export const getServerSideProps: GetServerSideProps<ServerProps> = async (ctx) =
 
   const user = await prisma.user.findFirst({
     where: {
-      id: +id,
+      name: `${username}`,
     },
     include: {
       apiSchema: true,
@@ -116,7 +115,7 @@ const UserPage: NextPage<UserPageProps> = ({
             <span className={styles.savedText}>{savedText}</span>
           </div>
           <div className={styles.editorHeaderRight}>
-            <a href={`http://localhost:3000/user/${user.id}/graphql`}>GraphiQL</a>
+            <a href={`/user/${user.id}/graphql`}>GraphiQL</a>
           </div>
         </div>
         <Editor
