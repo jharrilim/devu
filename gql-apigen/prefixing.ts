@@ -1,4 +1,4 @@
-export const prefixer = (source: string, name: string, id: number) => {
+export const prefixer = (source: string, name: string) => {
   const prefixedSource = source
     .replace(/:\s*(\[*)(\w+)/gm, (m, p1, p2) => {
       if (['Int', 'Float', 'String', 'Boolean', 'ID'].includes(p2)) {
@@ -16,7 +16,7 @@ export const prefixer = (source: string, name: string, id: number) => {
     userRoot += `
 type Query {
   """
-  This is the root query for [${name}](http://localhost:3000/user/${id}).
+  This is the root query for [${name}](http://localhost:3000/user/${name}).
   """
   ${name}_query: ${name}_Query
 }
@@ -27,7 +27,7 @@ type Query {
     userRoot += `
 type Mutation {
   """
-  This is the root mutation for [${name}](http://localhost:3000/user/${id}).
+  This is the root mutation for [${name}](http://localhost:3000/user/${name}).
   """
   ${name}_mutation: ${name}_Mutation
 }`;

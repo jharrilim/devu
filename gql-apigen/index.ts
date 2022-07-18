@@ -2,6 +2,7 @@
 
 import { DocumentNode, FieldDefinitionNode, Kind, ListTypeNode, NamedTypeNode, NonNullTypeNode, ObjectTypeDefinitionNode, TypeNode } from 'graphql';
 import type { IResolvers } from '@graphql-tools/utils/typings';
+import { faker } from '@faker-js/faker';
 
 export const mockResolvers = (typeDefs: DocumentNode): Record<string, any> => {
   const userDefinedTypes = typeDefs.definitions.filter(node =>
@@ -105,22 +106,23 @@ export const objectTypeGen = (userTypes: Record<string, any>) => (node: ObjectTy
 };
 
 export const fieldResolverGen = (userTypes: Record<string, any>) => (node: FieldDefinitionNode) => {
+  const fieldName = node.name.value;
   switch (node.type.kind) {
     case Kind.NON_NULL_TYPE: {
       const t = node.type as NonNullTypeNode;
       if (t.type.kind === Kind.NAMED_TYPE) {
         const namedType = t.type as NamedTypeNode;
-        return valueForType(userTypes)(namedType.name.value);
+        return valueForType(userTypes)(fieldName, namedType.name.value);
       } else {
         const listType = t.type as ListTypeNode;
-        return listTypeGen(userTypes)(listType);
+        return listTypeGen(userTypes)(fieldName, listType);
       }
     }
     case Kind.NAMED_TYPE: {
-      return valueForType(userTypes)(node.type.name.value);
+      return valueForType(userTypes)(fieldName, node.type.name.value);
     }
     case Kind.LIST_TYPE: {
-      return listTypeGen(userTypes)(node.type);
+      return listTypeGen(userTypes)(fieldName, node.type);
     }
     default: {
       return () => null;
@@ -128,26 +130,52 @@ export const fieldResolverGen = (userTypes: Record<string, any>) => (node: Field
   }
 };
 
-// Don't produce values pass this for now, need to make graph lazy later to avoid this
-// and only query nested fields when asked for
-const maxDepth = 2;
-
-const valueForType = (userTypes: Record<string, any>) => (typeVal: NamedTypeNode['name']['value']) => {
+const valueForType = (userTypes: Record<string, any>) => (fieldName: string, typeVal: NamedTypeNode['name']['value']) => {
   switch (typeVal) {
     case 'String': {
-      return () => 'Hello world!';
+      if (fieldName.endsWith('_at') || fieldName.endsWith('At') || fieldName.includes('date')) {
+        return () => faker.date.past().toISOString();;
+      }
+      if (fieldName.endsWith('_url') || fieldName.endsWith('Url')) {
+        return () => faker.internet.url();
+      }
+      if (fieldName.includes('email')) {
+        return () => faker.internet.email();
+      }
+      if (fieldName.includes('password')) {
+        return () => faker.internet.password();
+      }
+      if (/first_+name/i.test(fieldName)) {
+        return () => faker.name.firstName();
+      }
+      if (/last_+name/i.test(fieldName)) {
+        return () => faker.name.lastName();
+      }
+      if(/user|name/i.test(fieldName)) {
+        return () => faker.internet.userName();
+      }
+      if(/price|cost/i.test(fieldName)) {
+        return () => faker.commerce.price(1, 1000, 2, '$');
+      }
+      if (/phone/i.test(fieldName)) {
+        return () => faker.phone.number();
+      }
+      return () => faker.random.word();
     }
     case 'Int': {
-      return () => 1;
+      if (fieldName.includes('age')) {
+        return () => faker.datatype.number({ min: 1, max: 110 });
+      }
+      return () => faker.datatype.number();
     }
     case 'Boolean': {
-      return () => true;
+      return () => Math.random() > 0.5;
     }
     case 'Float': {
-      return () => 1.1;
+      return () => faker.datatype.float();
     }
     case 'ID': {
-      return () => '1';
+      return () => faker.database.mongodbObjectId();
     }
     default: {
       const flattenedTypeVal = Array.isArray(typeVal) ? typeVal[0] : typeVal;
@@ -158,11 +186,11 @@ const valueForType = (userTypes: Record<string, any>) => (typeVal: NamedTypeNode
       return () => Object.entries<any>(type)
         .reduce<Record<string, any>>((fields, [fieldName, fieldType]) => {
           if (Array.isArray(fieldType)) {
-            fields[fieldName] = [valueForType(userTypes)(fieldType[0])];
+            fields[fieldName] = [valueForType(userTypes)(fieldName, fieldType[0])];
           } else if (userTypes[fieldType]) {
-            fields[fieldName] = valueForType(userTypes)(fieldType);
+            fields[fieldName] = valueForType(userTypes)(fieldName, fieldType);
           } else {
-            fields[fieldName] = valueForType(userTypes)(fieldType)();
+            fields[fieldName] = valueForType(userTypes)(fieldName, fieldType)();
           }
           return fields;
         }, {});
@@ -170,15 +198,15 @@ const valueForType = (userTypes: Record<string, any>) => (typeVal: NamedTypeNode
   }
 };
 
-const listTypeGen = (userTypes: Record<string, any>) => (node: ListTypeNode): any => {
+const listTypeGen = (userTypes: Record<string, any>) => (fieldName: string, node: ListTypeNode): any => {
   switch (node.type.kind) {
     case Kind.NAMED_TYPE: {
       const t = node.type as NamedTypeNode;
-      return () => [valueForType(userTypes)(t.name.value)()];
+      return () => [valueForType(userTypes)(fieldName, t.name.value)()];
     }
     case Kind.LIST_TYPE: {
       const t = node.type as ListTypeNode;
-      return () => [listTypeGen(userTypes)(t)()];
+      return () => [listTypeGen(userTypes)(fieldName, t)()];
     }
     default: {
       return () => null;

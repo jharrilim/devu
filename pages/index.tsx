@@ -40,7 +40,7 @@ const Home: NextPage<ServerSideProps> = ({
         <ul>
           {users.map((user) => (
             <li key={user.id}>
-              <a href={`/user/${user.id}`}>
+              <a href={`/user/${user.name}`}>
                 {user.name}
               </a>
             </li>

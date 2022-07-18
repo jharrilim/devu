@@ -21,14 +21,14 @@ type test_Mutation {
 
 type Query {
   \\"\\"\\"
-  This is the root query for [test](http://localhost:3000/user/1).
+  This is the root query for [test](http://localhost:3000/user/test).
   \\"\\"\\"
   test_query: test_Query
 }
 
 type Mutation {
   \\"\\"\\"
-  This is the root mutation for [test](http://localhost:3000/user/1).
+  This is the root mutation for [test](http://localhost:3000/user/test).
   \\"\\"\\"
   test_mutation: test_Mutation
 }"

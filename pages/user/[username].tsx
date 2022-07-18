@@ -29,7 +29,10 @@ export const getServerSideProps: GetServerSideProps<ServerProps> = async (ctx) =
 
   const user = await prisma.user.findFirst({
     where: {
-      name: `${username}`,
+      name: {
+        equals: `${username}`,
+        mode: 'insensitive',
+      },
     },
     include: {
       apiSchema: true,
@@ -80,7 +83,7 @@ const UserPage: NextPage<UserPageProps> = ({
 
   const save = () => {
     setSaveDisabled(true);
-    fetch(`/api/user/${user.id}/schema`, {
+    fetch(`/api/user/${user.name}/schema`, {
       method: 'POST',
       body: JSON.stringify({ source: code }),
       headers: {
@@ -115,7 +118,7 @@ const UserPage: NextPage<UserPageProps> = ({
             <span className={styles.savedText}>{savedText}</span>
           </div>
           <div className={styles.editorHeaderRight}>
-            <a href={`/user/${user.id}/graphql`}>GraphiQL</a>
+            <a href={`/user/${user.name}/graphql`}>GraphiQL</a>
           </div>
         </div>
         <Editor

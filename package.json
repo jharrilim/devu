@@ -11,6 +11,7 @@
     "test:watch": "jest --watch"
   },
   "dependencies": {
+    "@faker-js/faker": "^7.3.0",
     "@graphiql/toolkit": "^0.6.0",
     "@monaco-editor/react": "^4.4.5",
     "@prisma/client": "4.0.0",

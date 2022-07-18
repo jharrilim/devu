@@ -1,5 +1,4 @@
 import { ApolloServer, gql } from 'apollo-server-micro';
-import { Kind } from 'graphql';
 import { NextApiHandler } from 'next';
 import { prisma } from '../../../../db';
 import { mockResolvers } from '../../../../gql-apigen';
@@ -15,28 +14,33 @@ export const config = {
 const handler: NextApiHandler = async (req, res) => {
   await corsMiddleware(req, res);
 
-  if (!req.query.id) {
-    return res.status(400);
+  if (!req.query.username) {
+    return res.status(400).end('This is impossible');
   }
 
-  const userId = +req.query.id;
+  const username = req.query.username;
 
-  const apiSchema = await prisma.apiSchema.findFirst({
+  const user = await prisma.user.findFirst({
     where: {
-      userId,
+      name: {
+        equals: username.toString(),
+        mode: 'insensitive',
+      }
     },
     include: {
-      user: true,
+      apiSchema: true,
     }
   });
 
-  if (!apiSchema) {
-    return res.status(404);
+  const apiSchema = user?.apiSchema;
+
+  if (!apiSchema || !user) {
+    return res.status(404).json({ error: 'User not found' });
   }
 
-  const name = apiSchema.user.name;
+  const name = user.name;
 
-  const prefixedSource = prefixer(apiSchema.source, name, userId);
+  const prefixedSource = prefixer(apiSchema.source, name);
 
   const typeDefs = gql`${prefixedSource}`;
 
@@ -48,10 +52,14 @@ const handler: NextApiHandler = async (req, res) => {
   await server.start();
 
   const handler = server.createHandler({
-    path: `/api/user/${userId}/api`,
+    path: `/api/user/${user.name}/api`,
   });
-
-  return await handler(req, res);
+  try {
+    return await handler(req, res);
+  } catch (e) {
+    console.log('wtf', e);
+    return res.status(500).end('something treacherous happened');
+  }
 };
 
 export default handler;
