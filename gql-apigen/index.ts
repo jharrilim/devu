@@ -145,10 +145,10 @@ const valueForType = (userTypes: Record<string, any>) => (fieldName: string, typ
       if (fieldName.includes('password')) {
         return () => faker.internet.password();
       }
-      if (/first_+name/i.test(fieldName)) {
+      if (/first_*name/i.test(fieldName)) {
         return () => faker.name.firstName();
       }
-      if (/last_+name/i.test(fieldName)) {
+      if (/last_*name/i.test(fieldName)) {
         return () => faker.name.lastName();
       }
       if(/user|name/i.test(fieldName)) {
