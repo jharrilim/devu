@@ -1,8 +1,9 @@
 import { ApolloServer, gql } from 'apollo-server-micro';
 import { NextApiHandler } from 'next';
+import { inspect } from 'util';
 import { prisma } from '../../../../db';
 import { mockResolvers } from '../../../../gql-apigen';
-import { prefixer } from '../../../../gql-apigen/prefixing';
+import { groupPrefixer, prefixer } from '../../../../gql-apigen/prefixing';
 import { corsMiddleware } from '../../../../middleware';
 
 export const config = {
@@ -49,19 +50,21 @@ const handler: NextApiHandler = async (req, res) => {
 
   const name = user.name;
 
-  const prefixedSource = prefixer(apiSchema.source, name);
-
-  const followerSources = user.following
+  const prefixedFollowerSources = user.following
     .map(following => {
       return {
         name: following.following.name,
         source: following.following.apiSchema?.source ?? '',
       };
     })
-    .filter(following => following.source)
-    .map(following => prefixer(following.source, following.name));
+    .filter(following => following.source);
+  const together = groupPrefixer([
+    { name: name, source: apiSchema.source },
+    ...prefixedFollowerSources,
+  ]);
+  console.log(together);
+  const typeDefs = gql`${together}`;
 
-    const typeDefs = gql`${[prefixedSource, ...followerSources].join('\n')}`;
   const server = new ApolloServer({
     typeDefs,
     resolvers: mockResolvers(typeDefs),

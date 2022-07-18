@@ -1,4 +1,4 @@
-import { prefixer } from '../prefixing';
+import { groupPrefixer } from '../prefixing';
 
 const source = `
 type User {
@@ -18,9 +18,9 @@ type Mutation {
 }
 `;
 
-describe(prefixer.name, () => {
+describe(groupPrefixer.name, () => {
   it('prefixes', () => {
-    const prefixedSource = prefixer(source, 'test', 1);
+    const prefixedSource = groupPrefixer([{ source, name: 'test' }]);
     expect(prefixedSource).toMatchSnapshot();
   });
 });

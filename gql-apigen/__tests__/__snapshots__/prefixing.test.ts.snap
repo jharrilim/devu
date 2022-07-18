@@ -1,6 +1,6 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`prefixer prefixes 1`] = `
+exports[`groupPrefixer prefixes 1`] = `
 "
 type test_User {
   name: String!
@@ -19,17 +19,21 @@ type test_Mutation {
 }
 
 
-type Query {
-  \\"\\"\\"
-  This is the root query for [test](http://localhost:3000/user/test).
-  \\"\\"\\"
-  test_query: test_Query
-}
-
-type Mutation {
-  \\"\\"\\"
-  This is the root mutation for [test](http://localhost:3000/user/test).
-  \\"\\"\\"
-  test_mutation: test_Mutation
-}"
+    type Query {
+      
+      \\"\\"\\"
+      This is the root query for [test](http://localhost:3000/user/test).
+      \\"\\"\\"
+      test_query: test_Query
+    
+    }
+    type Mutation {
+      
+      \\"\\"\\"
+      This is the root mutation for [test](http://localhost:3000/user/test).
+      \\"\\"\\"
+      test_mutation: test_Mutation
+    
+    }
+  "
 `;
