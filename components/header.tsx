@@ -6,7 +6,7 @@ const Header = () => {
   const { data: session } = useSession();
   return (
     <header className={styles.header}>
-      <Link href="/">Home</Link>
+      <Link className={styles.homeLink} href="/">Home</Link>
       {session ? (
         <button onClick={() => signOut()}>Sign out</button>
       ) : (

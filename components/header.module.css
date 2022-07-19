@@ -2,6 +2,13 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-left: 2rem;
   border-bottom: 1px solid var(--background-dark3);
+}
+
+.header a {
+  padding: 0.5rem;
+}
+
+.homeLink {
+  padding: 0.5em;
 }

@@ -1,7 +1,12 @@
 .root {
-  max-width: 1200px;
+  display: flex;
+  justify-content: center;
 }
 
 .container {
-  padding: 0 2rem;
+  max-width: 1200px;
+  flex: 1;
+}
+
+.main {
 }

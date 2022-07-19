@@ -29,8 +29,9 @@ const Home: NextPage<ServerSideProps> = ({
   const { data: session } = useSession();
   return (
     <div className={styles.root}>
+      <div className={styles.container}>
       <Header />
-      <main className={styles.container}>
+      <main className={styles.main}>
         <h1>Users</h1>
 
         {session ? (
@@ -48,6 +49,7 @@ const Home: NextPage<ServerSideProps> = ({
           ))}
         </ul>
       </main>
+      </div>
     </div>
   );
 };
