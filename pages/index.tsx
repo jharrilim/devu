@@ -2,6 +2,7 @@ import { prisma } from '../db';
 import type { GetServerSideProps, NextPage } from 'next';
 import Header from '../components/header';
 import { useSession } from 'next-auth/react';
+import styles from './index.module.css';
 
 interface ServerSideProps {
   users: {
@@ -27,9 +28,9 @@ const Home: NextPage<ServerSideProps> = ({
 }) => {
   const { data: session } = useSession();
   return (
-    <div>
+    <div className={styles.root}>
       <Header />
-      <main>
+      <main className={styles.container}>
         <h1>Users</h1>
 
         {session ? (

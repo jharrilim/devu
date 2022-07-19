@@ -167,7 +167,7 @@ const UserPage: NextPage<UserPageProps> = ({
       <Header />
       <main className={styles.root}>
         <div className={styles.container}>
-          <h2>
+          <h2 className={styles.usernameHeader}>
             {user?.name}
             {sameUser ? (
               <span className={styles.sameUser}> (You)</span>
@@ -181,11 +181,11 @@ const UserPage: NextPage<UserPageProps> = ({
           </h2>
           <div className={styles.editorHeader}>
             <div className={styles.editorHeaderLeft}>
-              <button onClick={save} disabled={saveDisabled}>Save</button>
+              <button className={styles.saveButton} onClick={save} disabled={saveDisabled}>Save</button>
               <span className={styles.savedText}>{savedText}</span>
             </div>
             <div className={styles.editorHeaderRight}>
-              <Link href={`/user/${user.name}/graphql`}>GraphiQL</Link>
+              <Link className={styles.graphqlLink} href={`/user/${user.name}/graphql`}>GraphiQL</Link>
             </div>
           </div>
           <Editor

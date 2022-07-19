@@ -1,9 +1,42 @@
+:root {
+  --color: hsl(172, 100%, 50%);
+  --color-dark: hsl(172, 100%, 25%);
+
+  --background: hsl(207, 18%, 20%);
+  --background-dark: hsl(168, 7%, 10%);
+  --background-dark2: hsl(168, 7%, 15%);
+  --background-dark3: hsl(168, 7%, 20%);
+}
+
 html,
 body {
   padding: 0;
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen,
     Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;
+  letter-spacing: 0.05em;
+  color: var(--color);
+  background: var(--background);
+}
+
+button {
+  all: unset;
+  padding: 0.5rem 0.5rem;
+  background-color: var(--background-dark2);
+  font-weight: bold;
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: var(--background-dark3);
+  transition: background-color 0.1s ease-in-out;
+}
+
+button:disabled {
+  color: var(--color-dark);
+  cursor: default;
+  pointer-events: none;
+  transition: color 0.1s ease-in-out;
 }
 
 a {
