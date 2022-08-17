@@ -151,16 +151,16 @@ const valueForType = (userTypes: Record<string, any>) => (fieldName: string, typ
       if (/last_*name/i.test(fieldName)) {
         return () => faker.name.lastName();
       }
-      if(/user|name/i.test(fieldName)) {
+      if (/user|name/i.test(fieldName)) {
         return () => faker.internet.userName();
       }
-      if(/price|cost/i.test(fieldName)) {
+      if (/price|cost/i.test(fieldName)) {
         return () => faker.commerce.price(1, 1000, 2, '$');
       }
-      if(/biography|summary|abstract|description|info/i.test(fieldName)) {
+      if (/biography|summary|abstract|description|info/i.test(fieldName)) {
         return () => faker.lorem.paragraph();
       }
-      if(/title|phrase|sentence|text/i.test(fieldName)) {
+      if (/title|phrase|sentence|text/i.test(fieldName)) {
         return () => faker.lorem.sentence();
       }
       if (/phone/i.test(fieldName)) {
@@ -208,14 +208,15 @@ const valueForType = (userTypes: Record<string, any>) => (fieldName: string, typ
 };
 
 const listTypeGen = (userTypes: Record<string, any>) => (fieldName: string, node: ListTypeNode): any => {
+  const amount = Math.floor(Math.random() * 10) + 1;
   switch (node.type.kind) {
     case Kind.NAMED_TYPE: {
       const t = node.type as NamedTypeNode;
-      return () => [valueForType(userTypes)(fieldName, t.name.value)()];
+      return () => Array(amount).fill(0).map(_ => valueForType(userTypes)(fieldName, t.name.value)());
     }
     case Kind.LIST_TYPE: {
       const t = node.type as ListTypeNode;
-      return () => [listTypeGen(userTypes)(fieldName, t)()];
+      return () => Array(amount).fill(0).map(_ => listTypeGen(userTypes)(fieldName, t)());
     }
     default: {
       return () => null;
