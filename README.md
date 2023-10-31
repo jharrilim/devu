@@ -1,3 +1,24 @@
+# Devu
+
+`devu` is a web application for creating mock GraphQL APIs. You generate APIs
+that automatically send mock data simply by writing out a GraphQL schema, and
+saving it to your user. You are then free to query the generated API hosted
+under your name. It is smart enough to understand what type of mock data
+should be generated for fields depending on their type and name.
+
+Furthermore, `devu` lets you stitch together API schemas with other users,
+so if you find someone else's mock API useful, you can simply add them and
+it will appear correctly namespaced in your API.
+
+This was a very social approach to mock API generation, however, the idea
+could be changed so that an API can be named and not belong to a specific
+user. Either way, you have an easily composable way to quickly create a
+GraphQL API. Useful for testing and prototyping.
+
+
+
+---
+
 This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
 
 ## Getting Started
