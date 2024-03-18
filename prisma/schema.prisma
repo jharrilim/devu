@@ -10,16 +10,45 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Organization {
+  id               Int                @id @default(autoincrement())
+  name             String             @unique
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @default(now())
+  public           Boolean            @default(true)
+  OrganizationUser OrganizationUser[]
+
+  @@index([name])
+}
+
+model OrganizationUser {
+  id             Int          @id @default(autoincrement())
+  organizationId Int
+  userId         Int
+  role           String
+  public         Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  user           User         @relation(fields: [userId], references: [id])
+
+  @@unique ([organizationId, userId])
+}
+
 model User {
-  id         Int        @id @default(autoincrement())
-  name       String
-  email      String     @unique
-  createdAt  DateTime   @default(now())
-  updatedAt  DateTime   @default(now())
-  apiSchema  ApiSchema?
-  followedBy Follows[]  @relation("following")
-  following  Follows[]  @relation("follower")
-  admin      Boolean    @default(false)
+  id                Int                @id @default(autoincrement())
+  name              String
+  email             String             @unique
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @default(now())
+  apiSchemas        ApiSchema[]
+  followedBy        Follows[]          @relation("following")
+  following         Follows[]          @relation("follower")
+  admin             Boolean            @default(false)
+  organizationUsers OrganizationUser[]
+
+  @@index([name])
+  @@index([email])
 }
 
 model Follows {
@@ -33,17 +62,12 @@ model Follows {
 
 model ApiSchema {
   id        Int      @id @default(autoincrement())
-  userId    Int      @unique
+  name      String
+  userId    Int
   user      User     @relation(fields: [userId], references: [id])
   source    String
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now())
-}
 
-model ApiData {
-  id          Int      @id @default(autoincrement())
-  apiSchemaId Int      @unique
-  data        Json
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @default(now())
+  @@index ([name])
 }

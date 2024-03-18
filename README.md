@@ -15,8 +15,6 @@ could be changed so that an API can be named and not belong to a specific
 user. Either way, you have an easily composable way to quickly create a
 GraphQL API. Useful for testing and prototyping.
 
-
-
 ---
 
 This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).

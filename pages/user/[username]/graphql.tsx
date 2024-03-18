@@ -18,13 +18,9 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
   };
 };
 
-type GraphQlPageProps =
-  | ServerProps;
+type GraphQlPageProps = ServerProps;
 
-const GraphQLPage: NextPage<GraphQlPageProps> = ({
-  apiUrl,
-  backUrl,
-}) => {
+const GraphQLPage: NextPage<GraphQlPageProps> = ({ apiUrl, backUrl }) => {
   const [fetcher, setFetcher] = useState<null | Fetcher>(null);
   useEffect(() => {
     const fetcher = createGraphiQLFetcher({ url: apiUrl });
@@ -37,11 +33,16 @@ const GraphQLPage: NextPage<GraphQlPageProps> = ({
 
   return (
     <div style={{ height: '100vh' }}>
-      <GraphiQL 
+      <GraphiQL
         fetcher={fetcher}
         toolbar={{
-          additionalContent: <a className="toolbar-button" href={backUrl}>Back</a>
-        }} />
+          additionalContent: (
+            <a className="toolbar-button" href={backUrl}>
+              Back
+            </a>
+          ),
+        }}
+      />
     </div>
   );
 };

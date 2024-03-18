@@ -1,10 +1,10 @@
 import { NextApiHandler } from 'next';
-import { unstable_getServerSession } from 'next-auth';
+import { getServerSession } from 'next-auth';
 import { prisma } from '../../../../db';
 import { nextAuthOptions } from '../../auth/[...nextauth]';
 
 const handler: NextApiHandler = async (req, res) => {
-  const session = await unstable_getServerSession(req, res, nextAuthOptions);
+  const session = await getServerSession(req, res, nextAuthOptions);
   if (!session?.user?.name) {
     return res.status(401).end('Unauthorized');
   }
@@ -34,14 +34,16 @@ const handler: NextApiHandler = async (req, res) => {
     return res.status(404).end('Not Found');
   }
 
-  res.json(await prisma.follows.delete({
-    where: {
-      followerId_followingId: {
-        followerId: currentUser.id,
-        followingId: user.id,
+  res.json(
+    await prisma.follows.delete({
+      where: {
+        followerId_followingId: {
+          followerId: currentUser.id,
+          followingId: user.id,
+        },
       },
-    },
-  }));
+    }),
+  );
 };
 
 export default handler;

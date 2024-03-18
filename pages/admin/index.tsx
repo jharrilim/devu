@@ -4,7 +4,7 @@ import Header from '../../components/header';
 import { useSession } from 'next-auth/react';
 import styles from './index.module.css';
 import { nextAuthOptions } from '../api/auth/[...nextauth]';
-import { unstable_getServerSession } from 'next-auth';
+import { getServerSession } from 'next-auth';
 
 interface ServerSideProps {
   errorCode?: number;
@@ -14,11 +14,13 @@ interface ServerSideProps {
   }[];
 }
 
-export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (ctx) => {
-  const session = await unstable_getServerSession(
+export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (
+  ctx,
+) => {
+  const session = await getServerSession(
     ctx.req,
     ctx.res,
-    nextAuthOptions
+    nextAuthOptions,
   );
   if (!session || !session.user || !session.user.email) {
     return {
@@ -46,43 +48,29 @@ export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (ct
   const users = await prisma.user.findMany({});
   return {
     props: {
-      users: users.map(u => ({
+      users: users.map((u) => ({
         id: u.id,
         name: u.name,
-      }))
-    }
+      })),
+    },
   };
 };
 
-const Admin: NextPage<ServerSideProps> = ({
-  errorCode,
-  users,
-}) => {
+const Admin: NextPage<ServerSideProps> = ({ errorCode, users }) => {
   const { data: session } = useSession();
   return (
-    <div className={styles.root}>
-      <div className={styles.container}>
-      <Header />
-      <main className={styles.main}>
-        <h1>Admin</h1>
-        {session ? (
-          <a href={`/user/${session?.user?.name}`}>Your Page</a>
-        ) : (
-          <></>
-        )}
-        <h2>Users</h2>
-        <ul>
-          {users?.map((user) => (
-            <li key={user.id}>
-              <a href={`/user/${user.name}`}>
-                {user.name}
-              </a>
-            </li>
-          ))}
-        </ul>
-      </main>
-      </div>
-    </div>
+    <>
+      <h1>Admin</h1>
+      {session ? <a href={`/user/${session?.user?.name}`}>Your Page</a> : <></>}
+      <h2>Users</h2>
+      <ul>
+        {users?.map((user) => (
+          <li key={user.id}>
+            <a href={`/user/${user.name}`}>{user.name}</a>
+          </li>
+        ))}
+      </ul>
+    </>
   );
 };
 

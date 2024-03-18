@@ -10,7 +10,7 @@ const findOrCreateUser = async (credentials: {
   const res = await fetch(url, {
     method: 'POST',
     body: JSON.stringify(credentials),
-    headers: { 'Content-Type': 'application/json' }
+    headers: { 'Content-Type': 'application/json' },
   });
   return await res.json();
 };
@@ -18,8 +18,15 @@ const findOrCreateUser = async (credentials: {
 export const nextAuthOptions: NextAuthOptions = {
   callbacks: {
     async signIn(params) {
-      const email = params?.profile?.email || params?.user?.email || params.credentials?.email.value;
-      const name = params?.profile?.name || params?.user?.name || params.credentials?.username.value || email;
+      const email =
+        params?.profile?.email ||
+        params?.user?.email ||
+        params.credentials?.email.value;
+      const name =
+        params?.profile?.name ||
+        params?.user?.name ||
+        params.credentials?.username.value ||
+        email;
       console.log('signing in ', email, name);
       const user = await findOrCreateUser({
         username: name!,
@@ -40,7 +47,7 @@ export const nextAuthOptions: NextAuthOptions = {
       }
       console.log('redirecting to ', baseUrl);
       return baseUrl;
-    }
+    },
   },
   // Configure one or more authentication providers
   providers: [
@@ -62,7 +69,11 @@ if (process.env.NODE_ENV === 'development') {
     // You can pass any HTML attribute to the <input> tag through the object.
     credentials: {
       username: { label: 'Username', type: 'text', placeholder: 'ashketchum' },
-      email: { label: 'Email', type: 'email', placeholder: 'ash.ketchum@example.com' },
+      email: {
+        label: 'Email',
+        type: 'email',
+        placeholder: 'ash.ketchum@example.com',
+      },
     },
     async authorize(credentials, req) {
       // You need to provide your own logic here that takes the credentials
@@ -75,7 +86,7 @@ if (process.env.NODE_ENV === 'development') {
       const res = await fetch(url, {
         method: 'POST',
         body: JSON.stringify(credentials),
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json' },
       });
       const user = await res.json();
 

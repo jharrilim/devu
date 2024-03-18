@@ -1,70 +1,90 @@
 /* eslint-disable react/display-name */
 
-import { DocumentNode, FieldDefinitionNode, Kind, ListTypeNode, NamedTypeNode, NonNullTypeNode, ObjectTypeDefinitionNode, TypeNode } from 'graphql';
+import {
+  DocumentNode,
+  FieldDefinitionNode,
+  Kind,
+  ListTypeNode,
+  NamedTypeNode,
+  NonNullTypeNode,
+  ObjectTypeDefinitionNode,
+  TypeNode,
+} from 'graphql';
 import type { IResolvers } from '@graphql-tools/utils/typings';
 import { faker } from '@faker-js/faker';
 
 export const mockResolvers = (typeDefs: DocumentNode): Record<string, any> => {
-  const userDefinedTypes = typeDefs.definitions.filter(node =>
-    node.kind === Kind.OBJECT_TYPE_DEFINITION
-    && node.name.value !== 'Query'
-    && node.name.value !== 'Mutation'
-    && node.name.value !== 'Subscription'
-  ).reduce<Record<string, any>>((types, n) => {
-    const node = n as ObjectTypeDefinitionNode;
-    types[node.name.value] = node.fields?.reduce<Record<string, string | [string]>>((fields, field) => {
-      switch (field.type.kind) {
-        case Kind.NAMED_TYPE: {
-          fields[field.name.value] = field.type.name.value;
-          return fields;
-        }
-        case Kind.LIST_TYPE: {
-          const innerListType = (type: TypeNode): string => {
-            switch (type.kind) {
+  const userDefinedTypes = typeDefs.definitions
+    .filter(
+      (node) =>
+        node.kind === Kind.OBJECT_TYPE_DEFINITION &&
+        node.name.value !== 'Query' &&
+        node.name.value !== 'Mutation' &&
+        node.name.value !== 'Subscription',
+    )
+    .reduce<Record<string, any>>((types, n) => {
+      const node = n as ObjectTypeDefinitionNode;
+      types[node.name.value] =
+        node.fields?.reduce<Record<string, string | [string]>>(
+          (fields, field) => {
+            switch (field.type.kind) {
               case Kind.NAMED_TYPE: {
-                return type.name.value;
+                fields[field.name.value] = field.type.name.value;
+                return fields;
               }
               case Kind.LIST_TYPE: {
-                // throw new Error('Nested lists are not supported');
-                return innerListType(type.type);
+                const innerListType = (type: TypeNode): string => {
+                  switch (type.kind) {
+                    case Kind.NAMED_TYPE: {
+                      return type.name.value;
+                    }
+                    case Kind.LIST_TYPE: {
+                      return innerListType(type.type);
+                    }
+                    case Kind.NON_NULL_TYPE: {
+                      return type.type.kind === Kind.NAMED_TYPE
+                        ? type.type.name.value
+                        : innerListType(type.type.type);
+                    }
+                    default: {
+                      return '';
+                    }
+                  }
+                };
+
+                fields[field.name.value] = [innerListType(field.type.type)];
+                return fields;
               }
               case Kind.NON_NULL_TYPE: {
-                // throw new Error('Nested nulls are not supported');
-                return type.type.kind === Kind.NAMED_TYPE ? type.type.name.value : innerListType(type.type.type);
+                const innerType = field.type.type;
+                if (innerType.kind === Kind.NAMED_TYPE) {
+                  fields[field.name.value] = innerType.name.value;
+                }
+                return fields;
               }
-              default: {
-                return '';
-              }
+              default:
+                return fields;
             }
-          };
+          },
+          {},
+        ) ?? {};
+      return types;
+    }, {});
 
-          fields[field.name.value] = [innerListType(field.type.type)];
-          return fields;
+  const resolvers = typeDefs.definitions.reduce<IResolvers>(
+    (resolvers, node) => {
+      switch (node.kind) {
+        case Kind.OBJECT_TYPE_DEFINITION: {
+          resolvers[node.name.value] = objectTypeGen(userDefinedTypes)(node);
+          return resolvers;
         }
-        case Kind.NON_NULL_TYPE: {
-          const innerType = field.type.type;
-          if (innerType.kind === Kind.NAMED_TYPE) {
-            fields[field.name.value] = innerType.name.value;
-          }
-          return fields;
+        default: {
+          return resolvers;
         }
-        default: return fields;
       }
-    }, {}) ?? {};
-    return types;
-  }, {});
-
-  const resolvers = typeDefs.definitions.reduce<IResolvers>((resolvers, node) => {
-    switch (node.kind) {
-      case Kind.OBJECT_TYPE_DEFINITION: {
-        resolvers[node.name.value] = objectTypeGen(userDefinedTypes)(node);
-        return resolvers;
-      }
-      default: {
-        return resolvers;
-      }
-    }
-  }, {});
+    },
+    {},
+  );
   return resolvers;
 };
 
@@ -87,23 +107,27 @@ export const mockResolvers = (typeDefs: DocumentNode): Record<string, any> => {
  *  }
  * ```
  */
-export const objectTypeGen = (userTypes: Record<string, any>) => (node: ObjectTypeDefinitionNode) => {
-  switch (node.name.value) {
-    case 'Mutation': {
-      return {};
-    }
-    case 'Query':
-    default: {
-      const fields = node.fields?.reduce<Record<string, ReturnType<ReturnType<typeof fieldResolverGen>>>>((fields, field) => {
-        const fieldName = field.name.value;
-        fields[fieldName] = fieldResolverGen(userTypes)(field);
-        return fields;
-      }, {}) ?? {};
+export const objectTypeGen =
+  (userTypes: Record<string, any>) => (node: ObjectTypeDefinitionNode) => {
+    switch (node.name.value) {
+      case 'Mutation': {
+        return {};
+      }
+      case 'Query':
+      default: {
+        const fields =
+          node.fields?.reduce<
+            Record<string, ReturnType<ReturnType<typeof fieldResolverGen>>>
+          >((fields, field) => {
+            const fieldName = field.name.value;
+            fields[fieldName] = fieldResolverGen(userTypes)(field);
+            return fields;
+          }, {}) ?? {};
 
-      return fields;
-    };
-  }
-};
+        return fields;
+      }
+    }
+  };
 
 export const fieldResolverGen = (userTypes: Record<string, any>) => (node: FieldDefinitionNode) => {
   const fieldName = node.name.value;
@@ -130,96 +154,121 @@ export const fieldResolverGen = (userTypes: Record<string, any>) => (node: Field
   }
 };
 
-const valueForType = (userTypes: Record<string, any>) => (fieldName: string, typeVal: NamedTypeNode['name']['value']) => {
-  switch (typeVal) {
-    case 'String': {
-      if (fieldName.endsWith('_at') || fieldName.endsWith('At') || fieldName.includes('date')) {
-        return () => faker.date.past().toISOString();;
+const valueForType =
+  (userTypes: Record<string, any>) =>
+  (fieldName: string, typeVal: NamedTypeNode['name']['value']) => {
+    switch (typeVal) {
+      case 'String': {
+        if (
+          fieldName.endsWith('_at') ||
+          fieldName.endsWith('At') ||
+          fieldName.includes('date')
+        ) {
+          return () => faker.date.past().toISOString();
+        }
+        if (fieldName.endsWith('_url') || fieldName.endsWith('Url')) {
+          return () => faker.internet.url();
+        }
+        if (fieldName.includes('email')) {
+          return () => faker.internet.email();
+        }
+        if (fieldName.includes('password')) {
+          return () => faker.internet.password();
+        }
+        if (/first_*name/i.test(fieldName)) {
+          return () => faker.name.firstName();
+        }
+        if (/last_*name/i.test(fieldName)) {
+          return () => faker.name.lastName();
+        }
+        if (/user|name/i.test(fieldName)) {
+          return () => faker.internet.userName();
+        }
+        if (/price|cost/i.test(fieldName)) {
+          return () => faker.commerce.price(1, 1000, 2, '$');
+        }
+        if (/biography|summary|abstract|description|info/i.test(fieldName)) {
+          return () => faker.lorem.paragraph();
+        }
+        if (/title|phrase|sentence|text/i.test(fieldName)) {
+          return () => faker.lorem.sentence();
+        }
+        if (/phone/i.test(fieldName)) {
+          return () => faker.phone.number();
+        }
+        return () => faker.random.word();
       }
-      if (fieldName.endsWith('_url') || fieldName.endsWith('Url')) {
-        return () => faker.internet.url();
-      }
-      if (fieldName.includes('email')) {
-        return () => faker.internet.email();
-      }
-      if (fieldName.includes('password')) {
-        return () => faker.internet.password();
-      }
-      if (/first_*name/i.test(fieldName)) {
-        return () => faker.name.firstName();
-      }
-      if (/last_*name/i.test(fieldName)) {
-        return () => faker.name.lastName();
-      }
-      if (/user|name/i.test(fieldName)) {
-        return () => faker.internet.userName();
-      }
-      if (/price|cost/i.test(fieldName)) {
-        return () => faker.commerce.price(1, 1000, 2, '$');
-      }
-      if (/biography|summary|abstract|description|info/i.test(fieldName)) {
-        return () => faker.lorem.paragraph();
-      }
-      if (/title|phrase|sentence|text/i.test(fieldName)) {
-        return () => faker.lorem.sentence();
-      }
-      if (/phone/i.test(fieldName)) {
-        return () => faker.phone.number();
-      }
-      return () => faker.random.word();
-    }
-    case 'Int': {
-      if (fieldName.toLowerCase() === 'id') {
+      case 'Int': {
+        if (fieldName.toLowerCase() === 'id') {
+          return () => faker.datatype.number();
+        }
+        if (fieldName.includes('age')) {
+          return () => faker.datatype.number({ min: 1, max: 110 });
+        }
         return () => faker.datatype.number();
       }
-      if (fieldName.includes('age')) {
-        return () => faker.datatype.number({ min: 1, max: 110 });
+      case 'Boolean': {
+        return () => Math.random() > 0.5;
       }
-      return () => faker.datatype.number();
-    }
-    case 'Boolean': {
-      return () => Math.random() > 0.5;
-    }
-    case 'Float': {
-      return () => faker.datatype.float();
-    }
-    case 'ID': {
-      return () => faker.database.mongodbObjectId();
-    }
-    default: {
-      const flattenedTypeVal = Array.isArray(typeVal) ? typeVal[0] : typeVal;
-      const type = userTypes[flattenedTypeVal];
-      if (!type) {
-        throw new Error(`Unknown type ${typeVal}`);
+      case 'Float': {
+        return () => faker.datatype.float();
       }
-      return () => Object.entries<any>(type)
-        .reduce<Record<string, any>>((fields, [fieldName, fieldType]) => {
-          if (Array.isArray(fieldType)) {
-            fields[fieldName] = [valueForType(userTypes)(fieldName, fieldType[0])];
-          } else if (userTypes[fieldType]) {
-            fields[fieldName] = valueForType(userTypes)(fieldName, fieldType);
-          } else {
-            fields[fieldName] = valueForType(userTypes)(fieldName, fieldType)();
-          }
-          return fields;
-        }, {});
+      case 'ID': {
+        return () => faker.database.mongodbObjectId();
+      }
+      default: {
+        const flattenedTypeVal = Array.isArray(typeVal) ? typeVal[0] : typeVal;
+        const type = userTypes[flattenedTypeVal];
+        if (!type) {
+          throw new Error(`Unknown type ${typeVal}`);
+        }
+        return () =>
+          Object.entries<any>(type).reduce<Record<string, any>>(
+            (fields, [fieldName, fieldType]) => {
+              if (Array.isArray(fieldType)) {
+                fields[fieldName] = [
+                  valueForType(userTypes)(fieldName, fieldType[0]),
+                ];
+              } else if (userTypes[fieldType]) {
+                fields[fieldName] = valueForType(userTypes)(
+                  fieldName,
+                  fieldType,
+                );
+              } else {
+                fields[fieldName] = valueForType(userTypes)(
+                  fieldName,
+                  fieldType,
+                )();
+              }
+              return fields;
+            },
+            {},
+          );
+      }
     }
-  }
-};
+  };
 
-const listTypeGen = (userTypes: Record<string, any>) => (fieldName: string, node: ListTypeNode): any => {
-  const amount = Math.floor(Math.random() * 10) + 1;
-  switch (node.type.kind) {
-    case Kind.NAMED_TYPE: {
-      const t = node.type as NamedTypeNode;
-      return () => Array(amount).fill(0).map(_ => valueForType(userTypes)(fieldName, t.name.value)());
+const listTypeGen =
+  (userTypes: Record<string, any>) =>
+  (fieldName: string, node: ListTypeNode): any => {
+    const amount = Math.floor(Math.random() * 10) + 1;
+    switch (node.type.kind) {
+      case Kind.NAMED_TYPE: {
+        const t = node.type as NamedTypeNode;
+        return () =>
+          Array(amount)
+            .fill(0)
+            .map((_) => valueForType(userTypes)(fieldName, t.name.value)());
+      }
+      case Kind.LIST_TYPE: {
+        const t = node.type as ListTypeNode;
+        return () =>
+          Array(amount)
+            .fill(0)
+            .map((_) => listTypeGen(userTypes)(fieldName, t)());
+      }
+      default: {
+        return () => null;
+      }
     }
-    case Kind.LIST_TYPE: {
-      const t = node.type as ListTypeNode;
-      return () => Array(amount).fill(0).map(_ => listTypeGen(userTypes)(fieldName, t)());
-    }
-    default: {
-      return () => null;
-    }
-  }
-};
+  };

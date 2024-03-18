@@ -1,9 +1,8 @@
 import { ApolloServer, gql } from 'apollo-server-micro';
 import { NextApiHandler } from 'next';
-import { inspect } from 'util';
 import { prisma } from '../../../../db';
 import { mockResolvers } from '../../../../gql-apigen';
-import { groupPrefixer, prefixer } from '../../../../gql-apigen/prefixing';
+import { groupPrefixer } from '../../../../gql-apigen/prefixing';
 import { corsMiddleware } from '../../../../middleware';
 
 export const config = {
@@ -26,23 +25,23 @@ const handler: NextApiHandler = async (req, res) => {
       name: {
         equals: username.toString(),
         mode: 'insensitive',
-      }
+      },
     },
     include: {
-      apiSchema: true,
+      apiSchemas: true,
       following: {
         include: {
           following: {
             include: {
-              apiSchema: true,
-            }
+              apiSchemas: true,
+            },
           },
-        }
+        },
       },
-    }
+    },
   });
 
-  const apiSchema = user?.apiSchema;
+  const apiSchema = user?.apiSchemas.find((s) => s.name === 'default');
 
   if (!apiSchema || !user) {
     return res.status(404).json({ error: 'User not found' });
@@ -51,19 +50,23 @@ const handler: NextApiHandler = async (req, res) => {
   const name = user.name;
 
   const prefixedFollowerSources = user.following
-    .map(following => {
+    .map((following) => {
       return {
         name: following.following.name,
-        source: following.following.apiSchema?.source ?? '',
+        source:
+          following.following.apiSchemas.find((s) => s.name === 'default')
+            ?.source ?? '',
       };
     })
-    .filter(following => following.source);
+    .filter((following) => following.source);
   const together = groupPrefixer([
     { name: name, source: apiSchema.source },
     ...prefixedFollowerSources,
   ]);
-  console.log(together);
-  const typeDefs = gql`${together}`;
+
+  const typeDefs = gql`
+    ${together}
+  `;
 
   const server = new ApolloServer({
     typeDefs,

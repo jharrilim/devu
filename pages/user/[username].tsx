@@ -1,14 +1,13 @@
 import { GetServerSideProps, NextPage } from 'next';
-import Editor from '@monaco-editor/react';
 import { prisma } from '../../db';
 import { useState } from 'react';
 import Error from 'next/error';
 import styles from './[username].module.css';
-import Header from '../../components/header';
-import Link from 'next/link';
-import { unstable_getServerSession } from 'next-auth';
+import { getServerSession } from 'next-auth';
 import { nextAuthOptions } from '../api/auth/[...nextauth]';
 import { useSession } from 'next-auth/react';
+import { GraphqlEditor } from '../../components/graphql-editor';
+import { Flex, Heading } from '@chakra-ui/react';
 
 interface ServerProps {
   errorCode?: number;
@@ -24,11 +23,13 @@ interface ServerProps {
   };
 }
 
-export const getServerSideProps: GetServerSideProps<ServerProps> = async (ctx) => {
-  const session = await unstable_getServerSession(
+export const getServerSideProps: GetServerSideProps<ServerProps> = async (
+  ctx,
+) => {
+  const session = await getServerSession(
     ctx.req,
     ctx.res,
-    nextAuthOptions
+    nextAuthOptions,
   );
 
   const username = ctx.params?.username;
@@ -37,7 +38,7 @@ export const getServerSideProps: GetServerSideProps<ServerProps> = async (ctx) =
     return {
       props: {
         errorCode: 404,
-      }
+      },
     };
   }
 
@@ -49,8 +50,12 @@ export const getServerSideProps: GetServerSideProps<ServerProps> = async (ctx) =
       },
     },
     include: {
-      apiSchema: true,
-    }
+      apiSchemas: {
+        where: {
+          name: 'default',
+        },
+      },
+    },
   });
 
   if (!pageUser) {
@@ -58,7 +63,7 @@ export const getServerSideProps: GetServerSideProps<ServerProps> = async (ctx) =
     return {
       props: {
         errorCode: 404,
-      }
+      },
     };
   }
 
@@ -71,7 +76,7 @@ export const getServerSideProps: GetServerSideProps<ServerProps> = async (ctx) =
         name: {
           equals: session.user.name,
           mode: 'insensitive',
-        }
+        },
       },
       include: {
         following: {
@@ -84,11 +89,11 @@ export const getServerSideProps: GetServerSideProps<ServerProps> = async (ctx) =
     following = (currentUser?.following?.length || 0) > 0;
   }
 
-  const apiSchema = pageUser.apiSchema
-    ? pageUser.apiSchema
+  const apiSchema = pageUser.apiSchemas.length > 0
+    ? pageUser.apiSchemas[0]
     : await prisma.apiSchema.create({
-      data: { userId: pageUser.id, source: '' },
-    });
+        data: { userId: pageUser.id, source: '', name: 'default' },
+      });
 
   // A logged in user viewing a user's page
   return {
@@ -107,7 +112,6 @@ export const getServerSideProps: GetServerSideProps<ServerProps> = async (ctx) =
   };
 };
 
-
 interface UserPageProps {
   apiSchema: NonNullable<ServerProps['apiSchema']>;
   following: ServerProps['following'];
@@ -123,88 +127,33 @@ const UserPage: NextPage<UserPageProps> = ({
 }) => {
   const { data: session } = useSession();
   const [followingState, setFollowing] = useState(following ?? false);
-  const [saveDisabled, setSaveDisabled] = useState(true);
-  const [code, setCode] = useState(apiSchema?.source ?? '');
-  const [savedText, setSavedText] = useState('');
-
-  const save = () => {
-    setSaveDisabled(true);
-    fetch(`/api/user/${user.name}/schema`, {
-      method: 'POST',
-      body: JSON.stringify({ source: code }),
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    })
-      .then(_ => {
-        setSavedText('🟢 Saved');
-      })
-      .catch(_ => {
-        setSavedText('🔴 Error');
-        setSaveDisabled(false);
-      });
-  };
-
-  const onEditorChange = (newValue?: string) => {
-    if (!newValue) {
-      return;
-    }
-    setCode(newValue);
-    setSaveDisabled(false);
-    setSavedText('');
-  };
 
   const onFollowChange = () => {
     const action = followingState ? 'unfollow' : 'follow';
     fetch(`/api/user/${user.name}/${action}`).then(() => {
       console.log(`${session?.user?.name} ${action}ed ${user.name}`);
-      setFollowing(followingState => !followingState);
+      setFollowing((followingState) => !followingState);
     });
   };
 
   return (
-    <div>
-      <Header />
-      <main className={styles.root}>
-        <div className={styles.container}>
-          <h2 className={styles.usernameHeader}>
-            {user?.name}
-            {sameUser ? (
-              <span className={styles.sameUser}> (You)</span>
-            ) : (
-              <>
-                {session && (
-                  <button onClick={onFollowChange}>{followingState ? 'unfollow' : 'follow'}</button>
-                )}
-              </>
+    <Flex flexDirection={'column'} gap="4">
+      <Heading as="h2" size="lg" className={styles.usernameHeader}>
+        {user?.name}
+        {sameUser ? (
+          <span className={styles.sameUser}> (You)</span>
+        ) : (
+          <>
+            {session && (
+              <button onClick={onFollowChange}>
+                {followingState ? 'unfollow' : 'follow'}
+              </button>
             )}
-          </h2>
-          <div className={styles.editorHeader}>
-            <div className={styles.editorHeaderLeft}>
-              <button className={styles.saveButton} onClick={save} disabled={saveDisabled}>Save</button>
-              <span className={styles.savedText}>{savedText}</span>
-            </div>
-            <div className={styles.editorHeaderRight}>
-              <Link className={styles.graphqlLink} href={`/user/${user.name}/graphql`}>GraphiQL</Link>
-            </div>
-          </div>
-          <Editor
-            height="500px"
-            language="graphql"
-            theme="vs-dark"
-            onChange={onEditorChange}
-            options={{
-              // meh, seems like a hindrance to add this
-              // readOnly: !sameUser,
-            }}
-            value={code}
-          />
-          <blockquote>
-            Note: Currently only supports queries, no mutations or subscriptions.
-          </blockquote>
-        </div>
-      </main>
-    </div>
+          </>
+        )}
+      </Heading>
+      <GraphqlEditor apiSchema={apiSchema} user={user} />
+    </Flex>
   );
 };
 
@@ -218,5 +167,12 @@ export default function Page({
   if (errorCode) {
     return <Error statusCode={errorCode} title="User does not exist" />;
   }
-  return <UserPage following={following} user={user!} apiSchema={apiSchema!} sameUser={sameUser} />;
-};
+  return (
+    <UserPage
+      following={following}
+      user={user!}
+      apiSchema={apiSchema!}
+      sameUser={sameUser}
+    />
+  );
+}

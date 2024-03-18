@@ -25,7 +25,7 @@ export const prefixer = (source: string, name: string) => {
   }
 
   if (prefixedSource.includes(`type ${name}_Mutation`)) {
-    rootPrefixes.mutation =`
+    rootPrefixes.mutation = `
       """
       This is the root mutation for [${name}](http://localhost:3000/user/${name}).
       """
@@ -35,22 +35,25 @@ export const prefixer = (source: string, name: string) => {
   return { prefixedSource, rootPrefixes };
 };
 
-export const groupPrefixer = (group: { source: string, name: string }[]) => {
+export const groupPrefixer = (group: { source: string; name: string }[]) => {
   const prefixedSources = group.map(({ source, name }) => {
     return prefixer(source, name);
   });
-  const rootPrefixes = prefixedSources.reduce((acc, { rootPrefixes }) => {
-      if (rootPrefixes.query)
-        acc.query.push(rootPrefixes.query);
-      if (rootPrefixes.mutation)
-        acc.mutation.push(rootPrefixes.mutation);
+  const rootPrefixes = prefixedSources.reduce(
+    (acc, { rootPrefixes }) => {
+      if (rootPrefixes.query) acc.query.push(rootPrefixes.query);
+      if (rootPrefixes.mutation) acc.mutation.push(rootPrefixes.mutation);
 
       return acc;
-    }
-    , { query: [] as string[], mutation: [] as string[] } as { query: string[], mutation: string[] });
+    },
+    { query: [] as string[], mutation: [] as string[] } as {
+      query: string[];
+      mutation: string[];
+    },
+  );
 
   let roots = '';
-  
+
   if (rootPrefixes.query.length) {
     roots += `
       type Query {

@@ -1,7 +1,6 @@
 import { NextApiHandler } from 'next';
 import { prisma } from '../../../db';
 
-
 const handler: NextApiHandler = async (req, res) => {
   if (req.method === 'POST') {
     const { username, email } = req.body;
@@ -16,17 +15,19 @@ const handler: NextApiHandler = async (req, res) => {
             equals: email,
             mode: 'insensitive',
           },
-        }
+        },
       });
       if (user) {
         return res.json(user);
       } else {
-        return res.json(await prisma.user.create({
-          data: {
-            name: username,
-            email,
-          },
-        }));
+        return res.json(
+          await prisma.user.create({
+            data: {
+              name: username,
+              email,
+            },
+          }),
+        );
       }
     } else {
       return res.status(400).end('Missing username or email');

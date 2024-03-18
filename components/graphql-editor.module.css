@@ -1,0 +1,26 @@
+.editor {
+  display: block; 
+}
+
+.editorHeader {
+  display: flex;
+  flex: 1;
+  justify-content: space-between;
+}
+
+.dark {
+  background-color: #1e1e1e;
+}
+
+.usernameHeader {
+  padding: 0 2rem;
+}
+
+.saveButton {
+  padding: 0.5rem 1rem;
+}
+
+.editorHeaderRight,
+.graphqlLink {
+  padding: 0.5rem 1rem;
+}

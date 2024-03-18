@@ -8,4 +8,4 @@ services:
       POSTGRES_DB: devu
       POSTGRES_PASSWORD: password
     ports:
-      - 5433:5432
+      - 5432:5432
